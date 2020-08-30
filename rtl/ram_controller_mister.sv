@@ -92,8 +92,8 @@ module ram_controller_mister (
 
 	
 
-   wire ena_a = vram_cpu_req | vram_cpu_write;
-   wire ena_b = vram_vga_req | 1'b0;
+   //wire ena_a = vram_cpu_req | vram_cpu_write;
+   //wire ena_b = vram_vga_req | 1'b0;
 	alt_vram inst (
 		.address_a(vram_cpu_addr),
 		.address_b(vram_vga_addr),
@@ -101,8 +101,8 @@ module ram_controller_mister (
 		.clock_b(vga_clk),
 		.data_a(vram_cpu_data_in),
 		.data_b(32'b0),
-		.wren_a(ena_a),
-		.wren_b(vram_cpu_write),
+		.wren_a(vram_cpu_write),
+		.wren_b(1'b0),
 		.q_a(vram_cpu_data_out),
 		.q_b(vram_vga_ram_out));
 

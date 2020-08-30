@@ -179,7 +179,7 @@ assign VIDEO_ARY = 8'd4;
 localparam CONF_STR = {
 	"CADR Lisp Machine;;",
 	"-;",
-	"S0,img,Lisp Machine Disk Image",
+	"S0,img,Lisp Machine Disk Image;",
 	"O1,Aspect ratio,5:4,5:4;",
 	"O2,TV Mode,NTSC,PAL;",
 	"O34,Noise,White,Red,Green,Blue;",
