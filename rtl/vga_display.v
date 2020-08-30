@@ -103,9 +103,9 @@ module vga_display(/*AUTOARG*/
 	h_counter <= 11'h0;
 	// End of automatics
      end else if (h_counter >= H_COUNTER_MAX)
-       h_counter <= 0;
+       h_counter <= 11'b0;
      else
-       h_counter <= h_counter + 1;
+       h_counter <= h_counter + 11'b1;
 
    always @(posedge vga_clk or posedge reset)
      if (reset) begin
@@ -115,9 +115,9 @@ module vga_display(/*AUTOARG*/
 	// End of automatics
      end else if (vclk) begin
 	if (v_counter >= V_COUNTER_MAX)
-	  v_counter <= 0;
+	  v_counter <= 11'b0;
 	else
-	  v_counter <= v_counter + 1;
+	  v_counter <= v_counter + 11'b1;
      end
 
    ////////////////////////////////////////////////////////////////////////////////
@@ -131,11 +131,11 @@ module vga_display(/*AUTOARG*/
 	// End of automatics
      end else if (h_in_box) begin
 	if (h_pos >= BOX_WIDTH)
-	  h_pos <= 0;
+	  h_pos <= 11'b0;
 	else
-	  h_pos <= h_pos + 1;
+	  h_pos <= h_pos + 11'b1;
      end else
-       h_pos <= 0;
+       h_pos <= 11'b0;
 
    always @(posedge vga_clk or posedge reset)
      if (reset) begin
@@ -146,11 +146,11 @@ module vga_display(/*AUTOARG*/
      end else if (vclk) begin
 	if (v_in_box) begin
 	   if (v_pos >= BOX_HEIGHT - 1)
-	     v_pos <= 0;
+	     v_pos <= 11'b0;
 	   else
-	     v_pos <= v_pos + 1;
+	     v_pos <= v_pos + 11'b1;
 	end else
-	  v_pos <= 0;
+	  v_pos <= 11'b0;
      end
 
    ////////////////////////////////////////////////////////////////////////////////
@@ -218,7 +218,7 @@ module vga_display(/*AUTOARG*/
 	if (~v_in_box)
 	  v_addr <= 0;
 	else if (v_addr_inc)
-	  v_addr <= v_addr + 1;
+	  v_addr <= v_addr + 15'b1;
      end
 
    wire preload, preload1, preload2;

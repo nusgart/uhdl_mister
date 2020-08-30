@@ -19,7 +19,7 @@ module busint(/*AUTOARG*/
    dataout, ack, load, interrupt, sdram_addr, sdram_data_out,
    sdram_req, sdram_write, bd_data_out, bd_cmd, bd_addr, bd_rd,
    bd_start, bd_wr, disk_state, vram_addr, vram_data_out, vram_req,
-   vram_write, promdisable, spyout, spyrd, spywr, spyreg,
+   vram_write, promdisable, spyout, spyrd, spywr, spyreg, o_audio,
    // Inputs
    clk, reset, addr, datain, req, write, sdram_data_in, sdram_done,
    sdram_ready, bd_state, bd_data_in, bd_bsy, bd_err, bd_iordy,
@@ -38,6 +38,7 @@ module busint(/*AUTOARG*/
    output ack;
    output load;
    output interrupt;
+	output [15:0] o_audio;
 
    // ---!!! //////////////////////////////////////////////////////////////////////
 
@@ -250,6 +251,7 @@ module busint(/*AUTOARG*/
       /*AUTOINST*/
       // Outputs
       .vector				(vector[7:0]),
+		.o_audio				(o_audio),
       // Inputs
       .clk				(clk),
       .reset				(reset),

@@ -149,7 +149,7 @@ module emu
 );
 
 ///////// Default values for ports not used in this core /////////
-
+wire [15:0] kbd_audio;
 assign ADC_BUS  = 'Z;
 assign USER_OUT = '1;
 assign {UART_RTS, UART_TXD, UART_DTR} = 0;
@@ -161,8 +161,8 @@ assign VGA_F1 = 0;
 
 // the CADR does have a 1-bit speaker of no specific frequency (it is CPU controlled)
 assign AUDIO_S = 0;
-assign AUDIO_L = 0;
-assign AUDIO_R = 0;
+assign AUDIO_L = kbd_audio;
+assign AUDIO_R = kbd_audio;
 assign AUDIO_MIX = 0;
 
 assign LED_DISK = 0;
@@ -179,6 +179,7 @@ assign VIDEO_ARY = 8'd4;
 localparam CONF_STR = {
 	"CADR Lisp Machine;;",
 	"-;",
+	"S0,img,Lisp Machine Disk Image",
 	"O1,Aspect ratio,5:4,5:4;",
 	"O2,TV Mode,NTSC,PAL;",
 	"O34,Noise,White,Red,Green,Blue;",
@@ -205,25 +206,44 @@ localparam CONF_STR = {
 };
 
 
-// emulated ps2 keyboard
+//// emulated ps2 keyboard
 wire        ps2_kbd_clk_out;
 wire        ps2_kbd_data_out;
 wire        ps2_kbd_clk_in;
 wire        ps2_kbd_data_in;
 wire [10:0] ps2_key;
 
-// emulated ps2 mouse
+//// emulated ps2 mouse
 wire        ps2_mouse_clk_out;
 wire        ps2_mouse_data_out;
 wire        ps2_mouse_clk_in;
 wire        ps2_mouse_data_in;
 
+//// Emulated block device
+// info about block device
+wire img_mounted;
+wire [63:0] img_size;
+// 
+wire [31:0] sd_lba;
+wire sd_rd;
+wire sd_wr;
+wire sd_ack;
+// buffer
+wire [7:0] sd_buff_addr;
+wire [15:0] sd_buff_dout;
+wire [15:0] sd_buff_din;
+wire sd_buff_wr;
+wire [15:0] sd_req_type;
+// config
+wire sd_conf;
+wire sd_ack_conf;
 
+////
 wire forced_scandoubler;
 wire  [1:0] buttons;
 wire [31:0] status;
 
-hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
+hps_io #(.STRLEN($size(CONF_STR)>>3), .WIDE(1)) hps_io
 (
 	.clk_sys(clk_sys),
 	.HPS_BUS(HPS_BUS),
@@ -238,15 +258,51 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.status_menumask({status[5]}),
 	
 	.ps2_key(ps2_key),
-	.ps2_kbd_clk_out(ps2_kbd_clk_out),
-	.ps2_kbd_data_out(ps2_kbd_data_out),
-	.ps2_kbd_clk_in(ps2_kbd_clk_in),
-	.ps2_kbd_data_in(ps2_kbd_data_in),
+	.ps2_kbd_clk_out(ps2_kbd_clk_in),
+	.ps2_kbd_data_out(ps2_kbd_data_in),
+	.ps2_kbd_clk_in(ps2_kbd_clk_out),
+	.ps2_kbd_data_in(ps2_kbd_data_out),
 
-	.ps2_mouse_clk_out(ps2_mouse_clk_out),
-	.ps2_mouse_data_out(ps2_mouse_data_out),
-	.ps2_mouse_clk_in(ps2_mouse_clk_in),
-	.ps2_mouse_data_in(ps2_mouse_data_in)
+	.ps2_mouse_clk_out(ps2_mouse_clk_in),
+	.ps2_mouse_data_out(ps2_mouse_data_in),
+	.ps2_mouse_clk_in(ps2_mouse_clk_out),
+	.ps2_mouse_data_in(ps2_mouse_data_out),
+	
+	.sd_lba(sd_lba),
+	.sd_rd(sd_rd),
+	.sd_wr(sd_wr),
+	.sd_ack(sd_ack),
+	//.sd_conf(sd_conf),
+	.sd_ack_conf(sd_ack_conf),
+	.sd_buff_dout(sd_buff_dout),
+	.sd_buff_din(sd_buff_din),
+	.sd_buff_wr(sd_buff_wr)
+);
+
+wire mmc_cs, mmc_di, mmc_do, mmc_sclk;
+
+/////////////////////// SD CARD EMULATION ////////////////////////
+
+sd_card #(.WIDE(1)) sd (
+		.clk_sys(clk_sys),
+		.reset(reset),
+		
+		.sdhc(1'b0),
+		.sd_lba(sd_lba),
+		.sd_rd(sd_rd),
+		.sd_wr(sd_wr),
+		.sd_ack(sd_ack),
+		//.sd_conf(sd_conf),
+		.sd_ack_conf(sd_ack_conf),
+		.sd_buff_dout(sd_buff_dout),
+		.sd_buff_din(sd_buff_din),
+		.sd_buff_wr(sd_buff_wr),
+		
+		.clk_spi(clk_sys),
+		.ss(mmc_cs),
+		.sck(mmc_sclk),
+		.mosi(mmc_do),
+		.miso(mmc_di)
 );
 
 
@@ -284,8 +340,8 @@ cadr_core cadr
 	.pal(status[2]),
 	.scandouble(forced_scandoubler),
 
+	/// vga
 	.ce_pix(ce_pix),
-
 	.vga_blank			(vga_blank),
 	.vga_r			(vga_r),
 	.vga_g			(vga_g),
@@ -293,6 +349,7 @@ cadr_core cadr
 	.vga_hsync		(vga_hsync),
 	.vga_vsync		(vga_vsync),
 	
+	/// DDR3
 	.DDRAM_CLK(DDRAM_CLK),
 	.DDRAM_ADDR(DDRAM_ADDR),
 	.DDRAM_BURSTCNT(DDRAM_BURSTCNT),
@@ -304,11 +361,17 @@ cadr_core cadr
 	.DDRAM_BE(DDRAM_BE),
 	.DDRAM_WE(DDRAM_WE),
 	
+	/// MMC card
+	.mmc_cs(mmc_cs),
+	.mmc_sclk(mmc_sclk),
+	.mmc_do(mmc_do),
+	.mmc_di(mmc_di),
 	// ps/2 interface
 	.ps2_kbd_clk_out(ps2_kbd_clk_out),
 	.ps2_kbd_data_out(ps2_kbd_data_out),
 	.ps2_kbd_clk_in(ps2_kbd_clk_in),
 	.ps2_kbd_data_in(ps2_kbd_data_in),
+	.kbd_audio(kbd_audio),
 
 	.ps2_mouse_clk_out(ps2_mouse_clk_out),
 	.ps2_mouse_data_out(ps2_mouse_data_out),

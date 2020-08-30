@@ -25,14 +25,17 @@ module block_dev_mister(
 	input wire reset,
 	
 	/// block-device interface
-	input [15:0] bd_data_in,
-   input [1:0] bd_cmd,
-   input [23:0] bd_addr,
-   input bd_rd,
+	// command
+	input [1:0] bd_cmd,
+	input bd_rd,
    input bd_start,
    input bd_wr,
+	// addr & data
+	input [23:0] bd_addr,
+	input [15:0] bd_data_in,
+	output [15:0] bd_data_out,
+	// status
    output [11:0] bd_state,
-   output [15:0] bd_data_out,
    output bd_bsy,
    output bd_err,
    output bd_iordy,

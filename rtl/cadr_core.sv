@@ -22,20 +22,24 @@ module cadr_core
 	input         pal,
 	input         scandouble,
 
+	/// VGA video out
+	// pixel sampling strobe
 	output reg    ce_pix,
-
-	output reg    HBlank,
-	output reg    HSync,
-	output reg    VBlank,
-	output reg    VSync,
-
+	// pixel colors
 	output wire vga_r,
 	output wire vga_g,
 	output wire vga_b,
+	// sync signals
 	output wire vga_hsync,
 	output wire vga_vsync,
+	// is the "beam" on-screen
 	output wire vga_blank,
 	
+	/// MMC interface
+	output wire mmc_cs, 
+	input wire mmc_di,
+	output wire mmc_do,
+	output wire mmc_sclk,
 	
 	/// DDR memory interface
 	output        DDRAM_CLK,
@@ -54,6 +58,7 @@ module cadr_core
 	output wire        ps2_kbd_data_out,
 	input wire        ps2_kbd_clk_in,
 	input wire        ps2_kbd_data_in,
+	output [15:0]		kbd_audio,
 	
 	// emulated ps2 mouse
 	output wire        ps2_mouse_clk_out,
@@ -107,7 +112,6 @@ module cadr_core
 	wire clk50;
 	
 	wire rs232_txd, rs232_rxd;
-	wire mmc_cs, mmc_di, mmc_do, mmc_sclk;
 	assign clk50 = clk;
 	wire sup_reset;
 	
@@ -206,6 +210,7 @@ module cadr_core
 	   .vga_hsync		(vga_hsync),
 	   .vga_vsync		(vga_vsync),
 		.rs232_txd			(rs232_txd),
+		.o_audio(kbd_audio),
 	   // Inouts
 	   .ps2_mouse_clk_in		(ps2_mouse_clk_in),
 	   .ps2_mouse_data_in	(ps2_mouse_data_in),

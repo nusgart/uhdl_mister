@@ -36,7 +36,7 @@ module lm3(/*AUTOARG*/
    spy_reg, busint_spyout, spy_rd, spy_wr, disk_state,
    mcr_addr, mcr_data_out, mcr_write, mmc_cs, mmc_do,
    mmc_sclk, vram_vga_addr, vram_vga_req, vga_blank, vga_r, vga_g,
-   vga_b, vga_hsync, vga_vsync, rs232_txd,
+   vga_b, vga_hsync, vga_vsync, rs232_txd, o_audio,
    // Inouts
    ps2_mouse_clk_out,
 	ps2_mouse_data_out,
@@ -181,6 +181,8 @@ module lm3(/*AUTOARG*/
    output vga_b;
    output vga_hsync;
    output vga_vsync;
+	
+	output [15:0] o_audio;
 
    // PS/2 ////////////////////////////////////////////////////////////////////////////////
 
@@ -360,6 +362,7 @@ module lm3(/*AUTOARG*/
       .bd_start				(bd_start),
       .bd_wr				(bd_wr),
       .disk_state			(disk_state[4:0]),
+		.o_audio				(o_audio),
       // Inputs
       .reset				(reset),
       .sdram_done			(sdram_done),
