@@ -34,13 +34,15 @@ module ram_controller_mister (
 	output  [7:0] DDRAM_BE,
 	output        DDRAM_WE,
 	
-   //// CADR sdram interface
+   //// CADR xbus_sdram interface
 	input wire [21:0] sdram_addr,
    input wire [31:0] sdram_data_in,
 	output [31:0] sdram_data_out,
 	input wire sdram_req,
    input wire sdram_write,
+	// is the write previously requested finished
 	output reg sdram_done,
+	// is the data from the read ready
    output reg sdram_ready,
 	
 	
@@ -75,14 +77,108 @@ module ram_controller_mister (
 	// address space is only 3.75 MW, so that's only 60 addresses mapping to 1 cache line.
 	assign DDRAM_CLK = clk;
 	assign DDRAM_BURSTCNT = 1;
-	assign DDRAM_ADDR = {7'b0, sdram_addr};
-	assign DDRAM_RD = sdram_req && ~DDRAM_BUSY;
-	assign DDRAM_WE = sdram_write && ~DDRAM_BUSY;
-	assign sdram_data_out = DDRAM_DOUT[31:0];
-	assign DDRAM_DIN = sdram_data_in[31:0];
-	assign sdram_ready = DDRAM_DOUT_READY && ~DDRAM_BUSY;
-	assign sdram_done = ~DDRAM_BUSY;
+	
+	
+	
 	assign DDRAM_BE = 0;
+	
+	
+	localparam IDLE = 3'd1;
+	localparam WRITE = 3'd2;
+	localparam WRITE_BUSY = 3'd3;
+	localparam WRITE_WAIT = 3'd4;
+	localparam READ = 3'd5;
+	localparam READ_BUSY = 3'd6;
+	localparam READ_WAIT = 3'd7;
+	
+	reg [2:0] state;
+	reg i_sdram_rdone;
+	reg i_sdram_wdone;
+	reg [21:0] i_sdram_addr;
+	reg [31:0] i_sdram_wdata;
+	reg [31:0] i_sdram_rdata;
+	
+	// DDRAM control
+	assign DDRAM_ADDR = {7'b0, i_sdram_addr};
+	assign DDRAM_DIN = i_sdram_wdata;
+	assign DDRAM_RD = (state == READ);
+	assign DDRAM_WE = (state == WRITE);
+	
+	
+	// xbus_sdram interface
+	always @(posedge cpu_clk) begin
+		sdram_ready <= i_sdram_rdone && sdram_req;
+		sdram_done <= i_sdram_wdone && sdram_write;
+	end
+	assign sdram_data_out = i_sdram_rdata;
+		
+	// core DDR SDRAM state machine
+	always @(posedge clk) begin
+		if (reset) begin
+			state <= IDLE;
+			i_sdram_rdone <= 0;
+			i_sdram_wdone <= 0;
+			i_sdram_addr <= 0;
+			i_sdram_wdata <= 0;
+			i_sdram_rdata <= 32'hffff_ffff;
+		end else begin
+			case (state)
+				// idle state
+				IDLE: begin
+					if (DDRAM_BUSY) begin
+						// if there is a refresh going on, can't do anything
+						state <= IDLE;
+					end else if (sdram_req) begin
+						// start read
+						state <= READ;
+					end else if (sdram_write) begin
+						// start write
+						state <= WRITE;
+						i_sdram_wdata <= sdram_data_in;
+					end
+				end
+				// write states
+				WRITE: begin
+					i_sdram_wdone <= 1'b0;
+					// wait for write to start
+					if (DDRAM_BUSY) state <= WRITE_BUSY;
+				end
+				WRITE_BUSY: begin
+					// wait for the DDRAM to complete the write
+					if (~DDRAM_BUSY) state <= WRITE_WAIT;
+				end
+				WRITE_WAIT: begin
+					// notify xbus that the write is complete
+					i_sdram_wdone <= 1'b1;
+					// once xbus stops requesting a write, return to idle
+					// note that this is correct behavior because xbus doesn't support bursts.
+					if (~sdram_write) state <= IDLE;
+				end
+				// read states
+				READ: begin
+					i_sdram_rdone <= 1'b0;
+					
+					// wait for read to start
+					if (DDRAM_BUSY) state <= READ_BUSY;
+				end
+				READ_BUSY: begin
+					// wait for DDRAM to complete the read
+					if (DDRAM_DOUT_READY) begin
+						state <= READ_WAIT;
+						i_sdram_rdata <= DDRAM_DOUT;
+					end
+				end
+				READ_WAIT: begin
+					// notify xbus that the read is complete
+					i_sdram_rdone <= 1'b1;
+					// once xbus stops requesting a read, return to idle
+					// note that this is correct behavior because xbus doesn't support bursts
+					if (~sdram_req) state <= IDLE;
+				end
+			endcase
+		end
+	end
+	
 
    ////////////////////////////////////////////////////////////////////////////////
    reg [31:0] vram_vga_data;
