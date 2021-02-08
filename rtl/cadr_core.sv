@@ -22,6 +22,8 @@ module cadr_core
 	input         pal,
 	input         scandouble,
 
+	//
+	output logic promdisable,
 	/// VGA video out
 	// pixel sampling strobe
 	output reg    ce_pix,
@@ -115,7 +117,7 @@ module cadr_core
 	assign clk50 = clk;
 	wire sup_reset;
 	
-   support_cyc2 support
+   support_mister support
      (
       .sysclk(clk50),
       .button_r(reset),
@@ -211,6 +213,7 @@ module cadr_core
 	   .vga_vsync		(vga_vsync),
 		.rs232_txd			(rs232_txd),
 		.o_audio(kbd_audio),
+		.promdisable(promdisable),
 	   // Inouts
 	   .ps2_mouse_clk_in		(ps2_mouse_clk_in),
 	   .ps2_mouse_data_in	(ps2_mouse_data_in),

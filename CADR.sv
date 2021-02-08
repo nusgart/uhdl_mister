@@ -330,6 +330,8 @@ wire vga_r, vga_g, vga_b, vga_hsync, vga_vsync, vga_blank;
 
 wire ce_pix;
 
+wire promdisable;
+
 cadr_core cadr
 (
 	.clk(clk_sys),
@@ -391,6 +393,10 @@ assign VGA_B  = vga_b ? 8'hff : 8'd0;
 
 reg  [26:0] act_cnt;
 always @(posedge clk_sys) act_cnt <= act_cnt + 1'd1; 
-assign LED_USER    = act_cnt[26]  ? act_cnt[25:18]  > act_cnt[7:0]  : act_cnt[25:18]  <= act_cnt[7:0];
+
+wire active;
+assign active = act_cnt[26]  ? act_cnt[25:18]  > act_cnt[7:0]  : act_cnt[25:18]  <= act_cnt[7:0];
+
+assign LED_USER    = ~active && promdisable;
 
 endmodule

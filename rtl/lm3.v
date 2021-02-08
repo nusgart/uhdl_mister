@@ -36,7 +36,7 @@ module lm3(/*AUTOARG*/
    spy_reg, busint_spyout, spy_rd, spy_wr, disk_state,
    mcr_addr, mcr_data_out, mcr_write, mmc_cs, mmc_do,
    mmc_sclk, vram_vga_addr, vram_vga_req, vga_blank, vga_r, vga_g,
-   vga_b, vga_hsync, vga_vsync, rs232_txd, o_audio,
+   vga_b, vga_hsync, vga_vsync, rs232_txd, o_audio, promdisable,
    // Inouts
    ps2_mouse_clk_out,
 	ps2_mouse_data_out,
@@ -83,7 +83,7 @@ module lm3(/*AUTOARG*/
    // output bus_int;
    // output loadmd;
    // output memack;
-   // output set_promdisable;
+   output wire promdisable;
 
    output [21:0] sdram_addr;	    /// SUPPORT / RC
    output [31:0] sdram_data_cpu2rc; /// SUPPORT / RC
@@ -414,6 +414,7 @@ module lm3(/*AUTOARG*/
       .memack				(memack),
       .set_promdisable			(set_promdisable)); //    input set_promdisable;
 
+		assign promdisable = set_promdisable;
 `define enable_mmc
 `ifdef enable_mmc
 
@@ -487,7 +488,7 @@ module lm3(/*AUTOARG*/
       .reset				(reset),
       .ms_ps2_clk_in			(ms_ps2_clk_in),
       .ms_ps2_data_in			(ms_ps2_data_in)); //    input ms_ps2_data_in;
-
+`define enable_spy_port
 `ifdef enable_spy_port
    spy_port spy_port
      (

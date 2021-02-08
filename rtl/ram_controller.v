@@ -178,7 +178,8 @@ module ram_controller(/*AUTOARG*/
 	  pending_vram_write <= 0;
 
 	if (vram_cpu_req) begin
-	   $display("vram: R addr %o -> %o; %t", vram_cpu_addr, vram[vram_cpu_addr], $time);
+	   //$display("vram: R addr %o -> %o; %t", vram_cpu_addr, vram[vram_cpu_addr], $time);
+	   $display("vram: R addr %x -> %x; %t", vram_cpu_addr, vram[vram_cpu_addr], $time);
 	   pending_vram_addr <= vram_cpu_addr;
 	   pending_vram_read <= 1;
 	end else
@@ -202,7 +203,8 @@ module ram_controller(/*AUTOARG*/
 	 if (pending_vram_write) begin
 	    vram[pending_vram_addr] = pending_vram_data;
 	    vram_cpu_done = 1;
-	    $display("vram: W addr %o <- %o; %t", pending_vram_addr, pending_vram_data, $time);
+	    //$display("vram: W addr %o <- %o; %t", pending_vram_addr, pending_vram_data, $time);
+	    $display("vram: W addr %x <- %x; %t", pending_vram_addr, pending_vram_data, $time);
 	 end
       end
    end

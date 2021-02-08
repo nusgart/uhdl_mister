@@ -24,7 +24,7 @@
 //
 // Made module syncrhronous. Total code refactoring. (Sorgelig)
 // clk_spi must be at least 4 x sck for proper work.
-
+`default_nettype none
 module sd_card #(parameter WIDE = 0)
 (
 	input         clk_sys,
@@ -472,59 +472,4 @@ end
 
 endmodule
 
-module sdbuf #(parameter WIDE)
-(
-	input             clock_a,
-	input      [AW:0] address_a,
-	input      [DW:0] data_a, 
-	input             wren_a,
-	output reg [DW:0] q_a,
-
-	input             clock_b,
-	input       [8:0] address_b,
-	input       [7:0] data_b, 
-	input             wren_b,
-	output reg  [7:0] q_b
-);
-
-localparam AW = WIDE ?  7 : 8;
-localparam DW = WIDE ? 15 : 7;
-
-always@(posedge clock_a) begin
-	if(wren_a) begin
-		ram[address_a] <= data_a;
-		q_a <= data_a;
-	end
-	else begin
-		q_a <= ram[address_a];
-	end
-end
-
-generate
-	if(WIDE) begin
-		reg [1:0][7:0] ram[1<<8];
-		always@(posedge clock_b) begin
-			if(wren_b) begin
-				ram[address_b[8:1]][address_b[0]] <= data_b;
-				q_b <= data_b;
-			end
-			else begin
-				q_b <= ram[address_b[8:1]][address_b[0]];
-			end
-		end
-	end
-	else begin
-		reg [7:0] ram[1<<9];
-		always@(posedge clock_b) begin
-			if(wren_b) begin
-				ram[address_b] <= data_b;
-				q_b <= data_b;
-			end
-			else begin
-				q_b <= ram[address_b];
-			end
-		end
-	end
-endgenerate
-
-endmodule
+`default_nettype wire

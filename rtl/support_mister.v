@@ -3,7 +3,7 @@
 `timescale 1ns/1ps
 `default_nettype none
 
-module support_cyc2(/*AUTOARG*/
+module support_mister(/*AUTOARG*/
    // Outputs
    boot, dcm_reset, halt, interrupt, lpddr_reset, reset,
    // Inputs

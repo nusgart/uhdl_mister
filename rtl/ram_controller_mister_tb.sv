@@ -1,6 +1,9 @@
 `timescale 1ns/1ps
 `default_nettype none
 
+`ifndef VCDFILE
+`define VCDFILE "rzc_mister.vcd"
+`endif
 // ISIM: wave add /
 
 module ram_controller_tb;
@@ -46,14 +49,26 @@ module ram_controller_tb;
    reg 		 vram_vga_req;
    wire 	 vram_vga_ready;
 
-   wire [17:0] 	 sram_a;
+   /*wire [17:0] 	 sram_a;
    wire 	 sram_oe_n, sram_we_n;
    wire [15:0] 	 sram1_in;
    wire [15:0] 	 sram1_out;
    wire [15:0] 	 sram2_in;
    wire [15:0] 	 sram2_out;
    wire 	 sram1_ce_n, sram1_ub_n, sram1_lb_n;
-   wire 	 sram2_ce_n, sram2_ub_n, sram2_lb_n;
+   wire 	 sram2_ce_n, sram2_ub_n, sram2_lb_n;*/
+   
+   
+   logic DDRAM_CLK;
+   logic DDRAM_BUSY;
+   logic [7:0] DDRAM_BURSTCNT;
+   logic [28:0] DDRAM_ADDR;
+   logic [63:0] DDRAM_DOUT;
+   logic DDRAM_DOUT_READY;
+   logic DDRAM_RD;
+   logic [63:0] DDRAM_DIN;
+   logic [7:0] DDRAM_BE;
+   logic DDRAM_WE;
 
    reg [4:0] 	 cpu_state;
    
@@ -76,13 +91,27 @@ module ram_controller_tb;
    assign prefetch = cpu_state == 3 || cpu_state == 4;
    assign fetch = cpu_state == 5;
    
-   ram_controller DUT(
+   ddrram_model model (
+		.DDRAM_CLK(DDRAM_CLK),
+		.DDRAM_ADDR(DDRAM_ADDR),
+		.DDRAM_BURSTCNT(DDRAM_BURSTCNT),
+		.DDRAM_BUSY(DDRAM_BUSY),
+		.DDRAM_DOUT(DDRAM_DOUT),
+		.DDRAM_DOUT_READY(DDRAM_DOUT_READY),
+		.DDRAM_RD(DDRAM_RD),
+		.DDRAM_DIN(DDRAM_DIN),
+		.DDRAM_BE(DDRAM_BE),
+		.DDRAM_WE(DDRAM_WE)
+   );
+   
+   
+   ram_controller_mister DUT(
 		      .clk(clk100),
 		      .vga_clk(clk50),
 		      .cpu_clk(clk1x),
 		      .reset(reset),
-		      .prefetch(prefetch),
-		      .fetch(fetch),
+		      //.prefetch(prefetch),
+		      //.fetch(fetch),
       
 		      .mcr_addr(mcr_addr),
 		      .mcr_data_out(mcr_data_in),
@@ -112,19 +141,16 @@ module ram_controller_tb;
 		      .vram_vga_req(vram_vga_req),
 		      .vram_vga_ready(vram_vga_ready),
       
-		      .sram_a(sram_a),
-		      .sram_oe_n(sram_oe_n),
-		      .sram_we_n(sram_we_n),
-		      .sram1_in(sram1_in),
-		      .sram1_out(sram1_out),
-		      .sram1_ce_n(sram1_ce_n),
-		      .sram1_ub_n(sram1_ub_n),
-		      .sram1_lb_n(sram1_lb_n),
-		      .sram2_in(sram2_in),
-		      .sram2_out(sram2_out),
-		      .sram2_ce_n(sram2_ce_n),
-		      .sram2_ub_n(sram2_ub_n),
-		      .sram2_lb_n(sram2_lb_n)
+		.DDRAM_CLK(DDRAM_CLK),
+		.DDRAM_ADDR(DDRAM_ADDR),
+		.DDRAM_BURSTCNT(DDRAM_BURSTCNT),
+		.DDRAM_BUSY(DDRAM_BUSY),
+		.DDRAM_DOUT(DDRAM_DOUT),
+		.DDRAM_DOUT_READY(DDRAM_DOUT_READY),
+		.DDRAM_RD(DDRAM_RD),
+		.DDRAM_DIN(DDRAM_DIN),
+		.DDRAM_BE(DDRAM_BE),
+		.DDRAM_WE(DDRAM_WE)
 		      );
 
    always
@@ -158,10 +184,10 @@ module ram_controller_tb;
 	 $display("vram_vga_read @%x; %t", addr, $time);
 	 vram_vga_addr = addr;
 	 vram_vga_req = 1;
-	 @(posedge clk100);
+	 @(posedge clk50);
 	 while (vram_vga_ready == 0)
 	   begin
-	      @(posedge clk100);
+	      @(posedge clk50);
 	   end
 	 test_read32 = vram_vga_data_out;
 	 vram_vga_req = 0;
@@ -182,13 +208,16 @@ module ram_controller_tb;
 	 vram_cpu_addr = addr;
 	 vram_cpu_data_out = data;
 	 vram_cpu_write = 1;
-	 @(posedge clk100);
+	 @(posedge clk1x);
+	 @(posedge clk1x);
 	 while (vram_cpu_done == 0)
-	   @(posedge clk100);
+	   @(posedge clk1x);
 	 vram_cpu_write = 0;
 	 $display("vram_cpu_write @%x done; %t", addr, $time);
-	 while (vram_cpu_done != 0)
-	   @(posedge clk100);
+	 @(posedge clk1x);
+	 @(posedge clk1x);
+	 //while (vram_cpu_done != 0)
+	 //  @(posedge clk100);
       end
    endtask
 
@@ -211,7 +240,7 @@ module ram_controller_tb;
 	 while (vram_cpu_ready != 0)
 	   @(posedge clk100);
 	 if (test_read32 !== data) begin
-	    test_failed = 1;
+	    test_failed = 2;
 	    //$display("vram_cpu_read failed %o != %o", test_read32, data);
 	    $display("vram_cpu_read failed %x != %x", test_read32, data);
 	 end
@@ -252,7 +281,7 @@ module ram_controller_tb;
 	 test_read49 = mcr_data_in;
 	 $display("mcr_read @%x done; %t", addr, $time);
 	 if (test_read49 !== data) begin
-	    test_failed = 1;
+	    test_failed = 3;
 	    //$display("mcr_read failed %o != %o", test_read49, data);
 	    $display("mcr_read failed %x != %x", test_read49, data);
 	 end
@@ -267,6 +296,7 @@ module ram_controller_tb;
 	 sdram_addr = addr;
 	 sdram_req = 1;
 	 @(posedge clk100);
+	 
 	 while (sdram_ready == 0)
 	   begin
 	      @(posedge clk100);
@@ -277,7 +307,7 @@ module ram_controller_tb;
 	 while (sdram_ready != 0)
 	   @(posedge clk100);
 	 if (test_read32 !== data) begin
-	    test_failed = 1;
+	    test_failed = 4;
 	    //$display("ram_sdram_read failed %o != %o", test_read32, data);
 	    $display("ram_sdram_read failed %x != %x", test_read32, data);
 	 end
@@ -311,20 +341,24 @@ module ram_controller_tb;
 	#5 reset = 1;
 	#100 reset = 0;
 
+	$display("Starting VRAM cpu tests");
 	t_vram_cpu_write(100, 32'o12345670);
 	t_vram_cpu_write(102, 32'o22222222);
 	t_vram_cpu_write(104, 32'o33333333);
-
+	$display("finished vram cpu write");
 	#200;
 	t_vram_cpu_read(100, 32'o12345670);
 	t_vram_cpu_read(102, 32'o22222222);
 	t_vram_cpu_read(104, 32'o33333333);
+	$display("finished vram cpu read");
 	
+	$display("Starting VRAM VGA read");
 	#320 t_vram_vga_read(100, 32'o12345670);
 	#320 t_vram_vga_read(102, 32'o22222222);
 	#320 t_vram_vga_read(104, 32'o33333333);
-
-
+	$display("Finished VRAM VGA read");
+	//
+	`ifdef DONT_DEFINE_THIS
 	#200;
 	@(posedge fetch)
 	  t_ram_mcr_write(0, 49'o111100001111);
@@ -337,7 +371,7 @@ module ram_controller_tb;
 	t_ram_mcr_read(0, 49'o111100001111);
 	t_ram_mcr_read(1, 49'o222200002222);
 	t_ram_mcr_read(2, 49'o333300003333);
-
+	`endif
 
 	#200;
 	t_ram_sdram_write(0, 32'o00000000);
@@ -353,7 +387,7 @@ module ram_controller_tb;
 
 	
 	#5000;
-	if (test_failed) $display("TEST FAILED ***");
+	if (test_failed) $display("TEST FAILED *** %d", test_failed);
 	else $display("TEST PASSED ***");
 	
 	$finish;
