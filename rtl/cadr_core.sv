@@ -66,9 +66,18 @@ module cadr_core
 	output wire        ps2_mouse_clk_out,
 	output wire        ps2_mouse_data_out,
 	input wire        ps2_mouse_clk_in,
-	input wire        ps2_mouse_data_in
+	input wire        ps2_mouse_data_in,
+	
+	
+	// uart
+	input         UART_CTS,
+	output        UART_RTS,
+	input         UART_RXD,
+	output        UART_TXD,
+	output        UART_DTR,
+	input         UART_DSR
 );
-
+	assign {UART_RTS, UART_DTR} = 0;
 	reg [3:0] clkcnt;
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
@@ -110,15 +119,12 @@ module cadr_core
    // End of automatics
    
    ////////////////////////////////////////////////////////////////////////////////
+   wire clk50;
 	
-	wire clk50;
+   assign clk50 = clk;
+   wire sup_reset;
 	
-	wire rs232_txd, rs232_rxd;
-	assign clk50 = clk;
-	wire sup_reset;
-	
-   support_mister support
-     (
+   support_mister support (
       .sysclk(clk50),
       .button_r(reset),
       .button_b(1'b0),
@@ -135,8 +141,7 @@ module cadr_core
       .cpu_clk				(cpu_clk),
       .lpddr_calib_done			(~reset));
    
-   ram_controller_mister rc
-     (
+   ram_controller_mister rc (
       .clk(clk50),
       .mcr_data_out(mcr_data_in),
       .mcr_data_in(mcr_data_out),
@@ -211,9 +216,9 @@ module cadr_core
 	   .vga_b			(vga_b),
 	   .vga_hsync		(vga_hsync),
 	   .vga_vsync		(vga_vsync),
-		.rs232_txd			(rs232_txd),
-		.o_audio(kbd_audio),
-		.promdisable(promdisable),
+	   .rs232_txd			(UART_TXD),
+	   .o_audio(kbd_audio),
+	   .promdisable(promdisable),
 	   // Inouts
 	   .ps2_mouse_clk_in		(ps2_mouse_clk_in),
 	   .ps2_mouse_data_in	(ps2_mouse_data_in),
@@ -241,7 +246,7 @@ module cadr_core
 	   .vga_clk			(clk_vga),
 	   .kb_ps2_clk			(ps2_kbd_clk_in),
 	   .kb_ps2_data			(ps2_kbd_data_in),
-	   .rs232_rxd			(rs232_rxd));
+	   .rs232_rxd			(UART_RXD));
    /*
    assign led[3] = 1'b0;
    assign led[2] = disk_state[1];

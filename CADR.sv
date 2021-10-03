@@ -171,10 +171,9 @@ wire [15:0] kbd_audio;
 
 assign ADC_BUS  = 'Z;
 assign USER_OUT = '1;
-assign {UART_RTS, UART_TXD, UART_DTR} = 0;
+//assign {UART_RTS, UART_TXD, UART_DTR} = 0;
 assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
 assign {SDRAM_DQ, SDRAM_A, SDRAM_BA, SDRAM_CLK, SDRAM_CKE, SDRAM_DQML, SDRAM_DQMH, SDRAM_nWE, SDRAM_nCAS, SDRAM_nRAS, SDRAM_nCS} = 'Z;
-assign {DDRAM_CLK, DDRAM_BURSTCNT, DDRAM_ADDR, DDRAM_DIN, DDRAM_BE, DDRAM_RD, DDRAM_WE} = '0;  
 
 assign VGA_SL = 0;
 assign VGA_F1 = 0;
@@ -263,7 +262,6 @@ wire sd_ack_conf;
 wire forced_scandoubler;
 wire  [1:0] buttons;
 wire [31:0] status;
-wire [10:0] ps2_key;
 
 hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 (
@@ -296,6 +294,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.sd_ack(sd_ack),
 	//.sd_conf(sd_conf),
 	.sd_ack_conf(sd_ack_conf),
+	.sd_buff_addr(sd_buff_addr),
 	.sd_buff_dout(sd_buff_dout),
 	.sd_buff_din(sd_buff_din),
 	.sd_buff_wr(sd_buff_wr)
@@ -305,7 +304,7 @@ wire mmc_cs, mmc_di, mmc_do, mmc_sclk;
 
 /////////////////////// SD CARD EMULATION ////////////////////////
 
-sd_card #(.WIDE(1)) sd (
+sd_card #(.WIDE(0)) sd (
 		.clk_sys(clk_sys),
 		.reset(reset),
 		
@@ -316,6 +315,7 @@ sd_card #(.WIDE(1)) sd (
 		.sd_ack(sd_ack),
 		//.sd_conf(sd_conf),
 		.sd_ack_conf(sd_ack_conf),
+		.sd_buff_addr(sd_buff_addr),
 		.sd_buff_dout(sd_buff_dout),
 		.sd_buff_din(sd_buff_din),
 		.sd_buff_wr(sd_buff_wr),
@@ -364,6 +364,7 @@ cadr_core cadr
 	
 	.pal(status[2]),
 	.scandouble(forced_scandoubler),
+	.promdisable,
 
 	/// vga
 	.ce_pix(ce_pix),
@@ -401,7 +402,14 @@ cadr_core cadr
 	.ps2_mouse_clk_out(ps2_mouse_clk_out),
 	.ps2_mouse_data_out(ps2_mouse_data_out),
 	.ps2_mouse_clk_in(ps2_mouse_clk_in),
-	.ps2_mouse_data_in(ps2_mouse_data_in)
+	.ps2_mouse_data_in(ps2_mouse_data_in),
+	
+	.UART_CTS(UART_CTS),
+	.UART_RTS(UART_RTS),
+	.UART_RXD(UART_RXD),
+	.UART_TXD(UART_TXD),
+	.UART_DTR(UART_DTR),
+	.UART_DSR(UART_DSR)
 );
 
 assign CLK_VIDEO = clk_vga;

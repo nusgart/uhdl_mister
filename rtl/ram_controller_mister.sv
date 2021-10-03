@@ -22,9 +22,11 @@ module ram_controller_mister (
    input logic cpu_clk,
    input logic vga_clk,
    input logic reset,
+	
 	// DDR interface
+	// this isn't made explicit, but this is just an Avalon-MM master
 	output logic        DDRAM_CLK,
-	input  logic        DDRAM_BUSY,
+	input  logic        DDRAM_BUSY, // waitrequest
 	output logic [7:0]  DDRAM_BURSTCNT,
 	output logic [28:0] DDRAM_ADDR,
 	input  logic [63:0] DDRAM_DOUT,
@@ -107,14 +109,14 @@ module ram_controller_mister (
 	
 	
 	// xbus_sdram interface
-	always @(posedge cpu_clk) begin
+	always_ff @(posedge cpu_clk) begin
 		sdram_ready <= i_sdram_rdone && sdram_req;
 		sdram_done <= i_sdram_wdone && sdram_write;
 	end
 	assign sdram_data_out = i_sdram_rdata;
 		
 	// core DDR SDRAM state machine
-	always @(posedge clk) begin
+	always_ff @(posedge clk) begin
 		if (reset) begin
 			state <= IDLE;
 			i_sdram_rdone <= 0;
@@ -145,12 +147,21 @@ module ram_controller_mister (
 				// write states
 				WRITE: begin
 					i_sdram_wdone <= 1'b0;
-					// wait for write to start
-					if (DDRAM_BUSY) state <= WRITE_BUSY;
+					
+					/*
+					 * this was based on a bad model of how the DDR controller worked
+					 * the DDR interface is actually an Avalon-MM master
+					 * This will be deleted soon, but I want this comment to be in the
+					 * git history
+					 * // wait for write to start
+					 * //if (DDRAM_BUSY) state <= WRITE_BUSY;
+					 */
+					state <= WRITE_BUSY;
 				end
 				WRITE_BUSY: begin
-					// wait for the DDRAM to complete the write
-					if (~DDRAM_BUSY) state <= WRITE_WAIT;
+					// this state only exists to slow things down (I think Xbus might have problems with
+					// peripherals responding too quickly???)
+					state <= WRITE_WAIT;
 				end
 				WRITE_WAIT: begin
 					// notify xbus that the write is complete
@@ -211,7 +222,7 @@ module ram_controller_mister (
 	//
    assign vram_vga_data_out = vram_vga_ready ? vram_vga_ram_out : vram_vga_data;
 
-	always @(posedge vga_clk) begin
+	always_ff @(posedge vga_clk) begin
 		if (reset) begin
 			vram_vga_data <= 32'h0;
 		end else if (vram_vga_ready) begin
@@ -220,7 +231,7 @@ module ram_controller_mister (
 	end
 	
 	
-	always @(posedge vga_clk) begin
+	always_ff @(posedge vga_clk) begin
 		if (reset) begin
 			vram_vga_ready_dly <= 4'h0;
 		end else begin
@@ -231,7 +242,7 @@ module ram_controller_mister (
    assign vram_vga_ready = vram_vga_ready_dly[0];
    assign vram_cpu_done = 1'b1;
 
-	always @(posedge cpu_clk) begin
+	always_ff @(posedge cpu_clk) begin
 		if (reset) begin
 			vram_cpu_ready_dly <= 4'h0;
 		end else begin
@@ -240,7 +251,7 @@ module ram_controller_mister (
 	end
 	
 	
-	always @(posedge cpu_clk) begin
+	always_ff @(posedge cpu_clk) begin
 		if (reset) begin
 			vram_cpu_data <= 32'h0;
 		end else if (~vram_cpu_ready_dly[1] & vram_cpu_ready_dly[0]) begin
