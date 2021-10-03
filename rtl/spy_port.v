@@ -171,6 +171,18 @@ module spy_port(/*AUTOARG*/
      end else begin
 	dbwrite <= (spyu_state == SPYU_OPW1);
      end
+	  
+    always @(posedge clk) begin
+      if (reset) begin
+        response <= 16'b0;
+      end else begin
+        if (dbread) begin
+          response <= spy_in;
+        end else if (start_bd_read) begin
+          response <= spy_bd_reg;
+        end
+     end
+    end
 
    always @(posedge clk)
      if (reset) begin
