@@ -387,7 +387,20 @@ cadr_core cadr
 	.DDRAM_BE(DDRAM_BE),
 	.DDRAM_WE(DDRAM_WE),
 	
+	/*
+	//SD-SPI
+	output        SD_SCK,
+	output        SD_MOSI,
+	input         SD_MISO,
+	output        SD_CS,
+	input         SD_CD,
+	*/
+	
 	/// MMC card
+	/*.mmc_cs(SD_CS),
+	.mmc_sclk(SD_SCK),
+	.mmc_do(SD_MOSI),
+	.mmc_di(SD_MISO),*/
 	.mmc_cs(mmc_cs),
 	.mmc_sclk(mmc_sclk),
 	.mmc_do(mmc_do),
