@@ -101,7 +101,8 @@ module ram_controller_mister (
 		DDRAM_CLK = clk;
 		DDRAM_BURSTCNT = 1;
 		DDRAM_BE = 8'hff;
-		DDRAM_ADDR = {7'b0, i_sdram_addr};
+		/// put ram at 0x3000_0000 --> other cores do this, probably to avoid overwriting important things
+		DDRAM_ADDR = {7'b0011_000, i_sdram_addr};
 		DDRAM_DIN = i_sdram_wdata;
 		DDRAM_RD = (state == READ);
 		DDRAM_WE = (state == WRITE);
